@@ -1,0 +1,11 @@
+{
+  "SchemaVersion": 1,
+  "Name": "spi_eeprom",
+  "ComponentId": "01639557-4ae4-47e8-8a0e-fd783f18da6d",
+  "EntryPoint": "/bin/app",
+  "CmdArgs": [],
+  "Capabilities": {
+    "SpiMaster": [ "ISU1" ]
+  },
+  "ApplicationType": "Default"
+}

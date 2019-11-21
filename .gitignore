@@ -1,0 +1,4 @@
+﻿# Ignore output directories
+.vs
+out
+
