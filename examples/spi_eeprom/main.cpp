@@ -14,16 +14,17 @@ int main(void)
 	const struct timespec sleep1s = { 1, 0 };
 
 	spi25xx::SpiEeprom eeprom;
-	int ret = eeprom.init();
+	int ret = eeprom.init(1, -1);// MT3620_ISU1_SPI, MT3620_SPI_CS_A
 	if (ret < 0)
 		return -1; 
 
 
 	// write the values 0-255 in the first 256 bytes of the EEPROM
 	uint8_t buff[256]; 
-	constexpr uint16_t offset = 0; 
+	constexpr uint32_t offset = 0; 
 	for (unsigned int i = 0; i < sizeof(buff); i++) {
 		buff[i] = static_cast<uint8_t>(i);
+		//buff[i] = 0; 
 	}
 
 	eeprom.write(offset, buff, sizeof(buff));

@@ -1,17 +1,14 @@
 #include "spi25xx.h"
 
-#include <errno.h>
 #include <string.h>
 #include <unistd.h>
 
-#define SPI_STRUCTS_VERSION 1
-#include <applibs/spi.h>
 #include <applibs/log.h>
 
 namespace spi25xx {
 
-	constexpr uint16_t PAGE_SIZE = 32;
-	constexpr uint16_t PAGE_MASK = 0x001F;
+	constexpr uint32_t PAGE_SIZE = 32;
+	constexpr uint32_t PAGE_MASK = 0x001F;
 
 	enum Instruction : uint8_t {
 		READ = 0b0011,
@@ -36,12 +33,10 @@ namespace spi25xx {
 
 	}
 
-	int SpiEeprom::init()
+	int SpiEeprom::init(SPI_InterfaceId spiInterface, SPI_ChipSelectId spiChipSelect)
 	{
-		constexpr SPI_InterfaceId spiInterface = 1; //MT3620_ISU1_SPI 
-		constexpr SPI_ChipSelectId spiChipSelect = -1; //MT3620_SPI_CS_A
 
-		// Initiaze the SPI master
+		// Initialize the SPI master
 		SPIMaster_Config config;
 
 		int ret = SPIMaster_InitConfig(&config);
@@ -72,7 +67,7 @@ namespace spi25xx {
 		return 0;
 	}
 
-	void SpiEeprom::write_block(uint16_t offset, uint8_t* data, uint16_t cbSize) {
+	void SpiEeprom::write_block(uint32_t offset, uint8_t* data, uint32_t cbSize) {
 		int ret;
 
 		uint8_t writeHeader[3];
@@ -107,13 +102,13 @@ namespace spi25xx {
 		} while ((status & (1 << WIP)) != 0);
 	}
 
-	void SpiEeprom::write(uint16_t offset, uint8_t *data, uint16_t size)
+	void SpiEeprom::write(uint32_t offset, uint8_t *data, uint32_t size)
 	{
 
 		while (size > 0) {
-			uint16_t page_offset;
-			uint16_t max_page_write_size;
-			uint16_t block_write_size;
+			uint32_t page_offset;
+			uint32_t max_page_write_size;
+			uint32_t block_write_size;
 
 			// Find the offset within the page (look at the last 5 bits)
 			page_offset = offset & PAGE_MASK;
@@ -136,7 +131,7 @@ namespace spi25xx {
 		return;
 	}
 
-	void SpiEeprom::read(uint16_t offset, uint8_t *data, uint16_t size)
+	void SpiEeprom::read(uint32_t offset, uint8_t *data, uint32_t size)
 	{
 		ssize_t ret; 
 		uint8_t instruction[3];
@@ -145,6 +140,7 @@ namespace spi25xx {
 		instruction[2] = static_cast<uint8_t>(offset & 0xFF);
 
 		ret = SPIMaster_WriteThenRead(_spiFd, instruction, sizeof(instruction), data, size);
+		(void) ret; // cast ret to void to suppress teh warning that ret is never used. 
 		// Log_Debug("SPIMaster_WriteThenRead: bytes=%d\n", ret);
 		return; 
 	}
@@ -156,6 +152,7 @@ namespace spi25xx {
 		uint8_t instruction;
 		instruction = RDSR;
 		bytes = SPIMaster_WriteThenRead(_spiFd, &instruction, sizeof(instruction), &status, sizeof(status));
+		(void) bytes; // cast bytes to void to suppress the warning that bytes are never used. 
 		// Log_Debug("readStatus -- SPIMaster_WriteThenRead: bytes=%d\n", bytes);
 		return status;
 	}
@@ -167,6 +164,7 @@ namespace spi25xx {
 		buffer[0] = WRSR;
 		buffer[1] = status;
 		bytes = ::write(_spiFd, &buffer, sizeof(buffer));
+		(void) bytes; // cast bytes to void to suppress the warning that bytes is not used. 
 		// Log_Debug("writeStatus -- write: bytes=%d\n", bytes);
 	}
 
@@ -174,6 +172,7 @@ namespace spi25xx {
 		ssize_t bytes; 
 		uint8_t buffer = WREN; 
 		bytes = ::write(_spiFd, &buffer, sizeof(buffer));
+		(void) bytes; // cast bytes to void to suppress the error that bytes is not used. 
 		return; 
 	}
 
@@ -181,6 +180,7 @@ namespace spi25xx {
 		ssize_t bytes; 
 		uint8_t buffer = WRDI;
 		bytes = ::write(_spiFd, &buffer, sizeof(buffer));
+		(void) bytes; // cast bytes to void to suppress the error that bytes is not used. 
 		return;
 	}
 

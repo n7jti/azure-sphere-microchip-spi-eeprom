@@ -13,5 +13,14 @@
     "cSpell.language": "en-US,en",
     "C_Cpp.default.includePath": [
         "${command:azuresphere.AzureSphereSdkDir}/Sysroots/5/usr/include"
+    ],
+    "cSpell.words": [
+        "RDSR",
+        "WRSR",
+        "applibs",
+        "eeprom",
+        "pthread",
+        "rtti",
+        "wrdi"
     ]
 }
