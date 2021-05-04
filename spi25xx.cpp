@@ -67,12 +67,16 @@ namespace spi25xx {
 		return 0;
 	}
 
-	void SpiEeprom::write_block(uint32_t offset, uint8_t* data, uint32_t cbSize) {
+	int SpiEeprom::write_block(uint32_t offset, uint8_t* data, uint32_t cbSize) {
 		int ret;
 
 		uint8_t writeHeader[3];
 		SPIMaster_Transfer xfer[2];
-		SPIMaster_InitTransfers(xfer, 2);
+		ret = SPIMaster_InitTransfers(xfer, 2);
+		if (ret < 0){
+			Log_Debug("ERROR: SPIMaster_InitTransfers: errno=%d (%s)\n", errno, strerror(errno));
+			return ret; 
+		}
 		writeHeader[0] = WRITE;
 		writeHeader[1] = reinterpret_cast<uint8_t*>(&offset)[1]; 
 		writeHeader[2] = reinterpret_cast<uint8_t*>(&offset)[0];
@@ -93,6 +97,7 @@ namespace spi25xx {
 		ret = SPIMaster_TransferSequential(_spiFd, xfer, 2);
 		if (ret < 0) {
 			Log_Debug("ERROR: SPIMaster_TransferSequential: errno=%d (%s)\n", errno, strerror(errno));
+			return ret; 
 		}
 
 		// Busy wait for any pending write-operation to complete
@@ -100,10 +105,13 @@ namespace spi25xx {
 		do {
 			status = readStatus();
 		} while ((status & (1 << WIP)) != 0);
+
+		return ret; 
 	}
 
-	void SpiEeprom::write(uint32_t offset, uint8_t *data, uint32_t size)
+	int SpiEeprom::write(uint32_t offset, uint8_t *data, uint32_t size)
 	{
+		int ret = 0; 
 
 		while (size > 0) {
 			uint32_t page_offset;
@@ -120,7 +128,10 @@ namespace spi25xx {
 			block_write_size = (size > max_page_write_size) ? max_page_write_size : size;
 
 			// Write the block to disk
-			write_block(offset, data, block_write_size);
+			ret = write_block(offset, data, block_write_size);
+			if (ret < 0){
+				break; 
+			}
 
 			// Update our parameters. 
 			offset += block_write_size;
@@ -128,10 +139,10 @@ namespace spi25xx {
 			size -= block_write_size;
 		}
 
-		return;
+		return ret;
 	}
 
-	void SpiEeprom::read(uint32_t offset, uint8_t *data, uint32_t size)
+	ssize_t SpiEeprom::read(uint32_t offset, uint8_t *data, uint32_t size)
 	{
 		ssize_t ret; 
 		uint8_t instruction[3];
@@ -140,9 +151,8 @@ namespace spi25xx {
 		instruction[2] = static_cast<uint8_t>(offset & 0xFF);
 
 		ret = SPIMaster_WriteThenRead(_spiFd, instruction, sizeof(instruction), data, size);
-		(void) ret; // cast ret to void to suppress teh warning that ret is never used. 
 		// Log_Debug("SPIMaster_WriteThenRead: bytes=%d\n", ret);
-		return; 
+		return ret; 
 	}
 
 	uint8_t SpiEeprom::readStatus()
