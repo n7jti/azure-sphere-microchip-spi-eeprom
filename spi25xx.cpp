@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 #include <applibs/log.h>
 
@@ -102,9 +103,17 @@ namespace spi25xx {
 
 		// Busy wait for any pending write-operation to complete
 		uint8_t status;
-		do {
-			status = readStatus();
-		} while ((status & (1 << WIP)) != 0);
+
+		status = readStatus(); 
+		while ((status & (1 << WIP)) != 0)
+		{
+			// sleep .5 ms
+			const struct timespec sleepTime = {.tv_sec = 0, .tv_nsec = 1000000};
+			nanosleep(&sleepTime, NULL); 
+
+			// check status again. 
+			status = readStatus(); 
+		}
 
 		return ret; 
 	}
