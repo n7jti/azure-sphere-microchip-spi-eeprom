@@ -4,11 +4,13 @@
 #include <time.h>
 #include <applibs/gpio.h>
 #include <applibs/log.h>
+#include <stdlib.h>
 
 #include <sys/random.h>
 #include <assert.h>
 
 #include "../../spi25xx.h"
+
 
 int compare(uint8_t *wptr, uint8_t *rptr, size_t len, uint32_t iteration, uint32_t offset)
 {
@@ -51,6 +53,17 @@ int main(void)
 	uint8_t wbuff[256]; 
 	uint8_t rbuff[256];
 
+	//uint8_t *wbuff = nullptr;
+	//uint8_t *rbuff = nullptr; 
+	constexpr size_t len = 256;
+
+	//wbuff = (uint8_t *)malloc(len);
+	//assert(wbuff != nullptr);
+
+	//rbuff = (uint8_t *)malloc(len);
+	//assert(rbuff != nullptr);
+
+
 
 	uint32_t test_size = 8192;
 
@@ -59,28 +72,36 @@ int main(void)
 	for (uint32_t x = 0; x < 512; x++)
 	{
 		Log_Debug("WRITE & READ 64KB iteration %d\n", x);
-		for (uint32_t offset = 0; offset < test_size; offset += sizeof(wbuff))
+		for (uint32_t offset = 0; offset < test_size; offset += len)
 		{
 			ssize_t ret; 
-			getrandom(wbuff, sizeof(wbuff), 0);
-			//memset(wbuff, x & 0xFF, sizeof(wbuff));
+			getrandom(wbuff, len, 0);
+			//memset(wbuff, x & 0xFF, len);
 			Log_Debug("DO WRITE @ %x \n", offset);
 			
-			ret = eeprom.write(offset, wbuff, sizeof(wbuff));
+			ret = eeprom.write(offset, wbuff, len);
 			assert( ret >= 0 );
+
+			//constexpr struct timespec delay = {.tv_sec = 0, .tv_nsec = 25000000};
+
+			// delay
+			//nanosleep(&delay, NULL); 
 
 			Log_Debug("DO READ @ %x \n", offset);
-			ret = eeprom.read(offset, rbuff, sizeof(rbuff));
+			ret = eeprom.read(offset, rbuff, len);
 			assert( ret >= 0 );
 
-			ret = compare(wbuff, rbuff, sizeof(wbuff), x, offset);
+			// delay
+			//nanosleep(&delay, NULL);
+
+			ret = compare(wbuff, rbuff, len, x, offset);
 			if (ret < 0){
 				Log_Debug("DO READ @ 0x%x \n", offset);
-				ret = eeprom.read(offset, rbuff, sizeof(rbuff));
+				ret = eeprom.read(offset, rbuff, len);
 				assert( ret >= 0 );
 
 				// compare a 2nd time. 
-				ret = compare(wbuff, rbuff, sizeof(wbuff), x, offset);
+				ret = compare(wbuff, rbuff, len, x, offset);
 				
 				passed = false;
 
